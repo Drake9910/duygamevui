@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Siêu Trí Nhớ - Tết 2025</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ffcccc, #ff9999);
+            overflow: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+            opacity: 0.2;
+            z-index: 0;
+        }
+        #welcome-screen, #game-screen, #game-over-screen {
+            text-align: center;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            border: 2px solid #ffd700;
+        }
+        h1 {
+            color: #d32f2f;
+            font-family: 'Georgia', serif;
+            text-shadow: 2px 2px 4px #ffd700;
+        }
+        #game-container {
+            display: grid;
+            grid-template-columns: repeat(2, 120px);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .box {
+            width: 120px;
+            height: 120px;
+            cursor: pointer;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            transition: transform 0.2s, background-color 0.3s;
+            background-size: cover;
+        }
+        .box:hover {
+            transform: scale(1.05);
+        }
+        #score, #personal-best, #level {
+            font-size: 26px;
+            color: #d32f2f;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        #message {
+            font-size: 22px;
+            color: #b71c1c;
+            margin-top: 20px;
+        }
+        #high-scores {
+            font-size: 20px;
+            color: #b71c1c;
+            margin-top: 20px;
+            background: rgba(255, 245, 157, 0.8);
+            padding: 15px;
+            border: 3px solid #d32f2f;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        #high-scores h3 {
+            margin: 0 0 10px 0;
+            color: #d32f2f;
+            text-shadow: 1px 1px 2px #ffd700;
+        }
+        #high-scores p {
+            margin: 5px 0;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #b71c1c;
+        }
+        input, select {
+            padding: 8px;
+            font-size: 16px;
+            border: 2px solid #ffd700;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        .flower {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: url('https://cdn-icons-png.flaticon.com/512/2909/2909766.png') no-repeat center;
+            background-size: contain;
+            opacity: 0.7;
+        }
+        #flower1 { top: 10%; left: 10%; }
+        #flower2 { bottom: 10%; right: 10%; }
+    </style>
+</head>
+<body>
+    <div class="flower" id="flower1"></div>
+    <div class="flower" id="flower2"></div>
+
+    <!-- Màn hình chào hỏi -->
+    <div id="welcome-screen">
+        <h1>Chào Mừng Tết 2025 - Game Siêu Trí Nhớ</h1>
+        <p>Nhập tên của bạn:</p>
+        <input type="text" id="player-name" placeholder="Tên của bạn">
+        <p>Chọn tốc độ ban đầu:</p>
+        <select id="speed">
+            <option value="slow">Chậm (0.75s)</option>
+            <option value="normal" selected>Thường (0.5s)</option>
+            <option value="fast">Nhanh (0.3s)</option>
+        </select>
+        <br>
+        <button onclick="startGameWithName()">Chúc Tết & Chơi Ngay!</button>
+    </div>
+
+    <!-- Màn hình game -->
+    <div id="game-screen" class="hidden">
+        <div id="level">Màn: 1</div>
+        <div id="score">Điểm: 0</div>
+        <div id="personal-best">Điểm cao nhất: 0</div>
+        <div id="game-container"></div>
+    </div>
+
+    <!-- Màn hình game over -->
+    <div id="game-over-screen" class="hidden">
+        <h2 id="message"></h2>
+        <div id="high-scores"></div>
+        <button onclick="restartGame()">Chơi Lại - Năm Mới Vui Vẻ!</button>
+    </div>
+
+    <script>
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameContainer = document.getElementById('game-container');
+        const scoreDisplay = document.getElementById('score');
+        const personalBestDisplay = document.getElementById('personal-best');
+        const levelDisplay = document.getElementById('level');
+        const messageDisplay = document.getElementById('message');
+        const highScoresDisplay = document.getElementById('high-scores');
+
+        let sequence = [];
+        let playerSequence = [];
+        let score = 0;
+        let level = 1;
+        let showingSequence = false;
+        let gameOver = false;
+        let playerName = '';
+        let speed = 500; // Mặc định: 0.5s
+        let highScores = JSON.parse(localStorage.getItem('highScores')) || [];
+        let personalBest = 0;
+
+        const levelSettings = [
+            { colors: ['#ff4d4d', '#ffd700', '#ff9999', '#ffeb3b'], speedFactor: 1, target: 2 }, // Màn 1: 4 màu
+            { colors: ['#ff4d4d', '#ffd700', '#ff9999', '#ffeb3b', '#4caf50', '#2196f3'], speedFactor: 0.75, target: 4 }, // Màn 2: 6 màu
+            { colors: ['#ff4d4d', '#ffd700', '#ff9999', '#ffeb3b', '#4caf50', '#2196f3', '#9c27b0', '#00bcd4'], speedFactor: 0.5, target: Infinity } // Màn 3: 8 màu
+        ];
+
+        function updateGameContainer() {
+            gameContainer.innerHTML = '';
+            const currentLevel = levelSettings[level - 1];
+            const colors = currentLevel.colors;
+            gameContainer.style.gridTemplateColumns = `repeat(${Math.ceil(colors.length / 2)}, 120px)`;
+            colors.forEach((color, index) => {
+                const box = document.createElement('div');
+                box.classList.add('box');
+                box.style.backgroundColor = color;
+                box.setAttribute('data-index', index);
+                box.addEventListener('click', () => handleBoxClick(index)); // Gắn sự kiện trực tiếp
+                gameContainer.appendChild(box);
+            });
+        }
+
+        function generateSequence() {
+            const currentLevel = levelSettings[level - 1];
+            sequence.push(Math.floor(Math.random() * currentLevel.colors.length));
+        }
+
+        function highlightBox(index) {
+            const boxes = document.querySelectorAll('.box');
+            const box = boxes[index];
+            const originalColor = box.style.backgroundColor;
+            box.style.backgroundColor = '#000';
+            setTimeout(() => {
+                box.style.backgroundColor = originalColor;
+            }, speed / 2);
+        }
+
+        function showSequence() {
+            showingSequence = true;
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < sequence.length) {
+                    highlightBox(sequence[i]);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    showingSequence = false;
+                }
+            }, speed);
+        }
+
+        function startGame() {
+            if (!gameOver) {
+                playerSequence = [];
+                generateSequence();
+                showSequence();
+            }
+        }
+
+        function handleBoxClick(index) {
+            if (!showingSequence && !gameOver) {
+                playerSequence.push(index);
+                highlightBox(index);
+                checkSequence();
+            }
+        }
+
+        function checkSequence() {
+            if (playerSequence.length === sequence.length) {
+                for (let i = 0; i < sequence.length; i++) {
+                    if (playerSequence[i] !== sequence[i]) {
+                        gameOver = true;
+                        endGame();
+                        return;
+                    }
+                }
+                score++;
+                scoreDisplay.textContent = `Điểm: ${score}`;
+                if (score > personalBest) {
+                    personalBest = score;
+                    personalBestDisplay.textContent = `Điểm cao nhất: ${personalBest}`;
+                }
+                const currentLevel = levelSettings[level - 1];
+                if (score >= currentLevel.target && level < levelSettings.length) {
+                    level++;
+                    speed = speed * currentLevel.speedFactor;
+                    levelDisplay.textContent = `Màn: ${level}`;
+                    updateGameContainer();
+                }
+                setTimeout(startGame, 500);
+            }
+        }
+
+        function startGameWithName() {
+            playerName = document.getElementById('player-name').value || 'Người chơi';
+            const speedSelect = document.getElementById('speed').value;
+            speed = speedSelect === 'slow' ? 750 : speedSelect === 'fast' ? 300 : 500; // Chậm: 0.75s, Thường: 0.5s, Nhanh: 0.3s
+            welcomeScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            updateGameContainer();
+            levelDisplay.textContent = `Màn: ${level}`;
+            setTimeout(startGame, 500);
+        }
+
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            messageDisplay.textContent = `Chúc Tết ${playerName}! Điểm của bạn: ${score} (Màn ${level})`;
+            updateHighScores();
+            displayHighScores();
+        }
+
+        function updateHighScores() {
+            const existingPlayer = highScores.find(entry => entry.name === playerName);
+            if (existingPlayer) {
+                if (score > existingPlayer.score) {
+                    existingPlayer.score = score;
+                }
+            } else {
+                highScores.push({ name: playerName, score: score });
+            }
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 5);
+            localStorage.setItem('highScores', JSON.stringify(highScores));
+        }
+
+        function displayHighScores() {
+            highScoresDisplay.innerHTML = '<h3>Bảng Xếp Hạng Tết</h3>';
+            highScores.forEach((entry, index) => {
+                highScoresDisplay.innerHTML += `<p>${index + 1}. ${entry.name}: ${entry.score}</p>`;
+            });
+        }
+
+        function restartGame() {
+            gameOverScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            sequence = [];
+            playerSequence = [];
+            score = 0;
+            level = 1;
+            speed = document.getElementById('speed').value === 'slow' ? 750 : document.getElementById('speed').value === 'fast' ? 300 : 500;
+            gameOver = false;
+            scoreDisplay.textContent = `Điểm: ${score}`;
+            personalBestDisplay.textContent = `Điểm cao nhất: ${personalBest}`;
+            levelDisplay.textContent = `Màn: ${level}`;
+            updateGameContainer();
+            setTimeout(startGame, 500);
+        }
+    </script>
+</body>
+</html>
